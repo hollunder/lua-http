@@ -1,0 +1,42 @@
+describe("cookies module", function()
+	local http_cookies = require "http.cookies"
+	it(":get works", function()
+		local s = http_cookies.new_store()
+		assert.same(nil, s:get("mysite.com", "/", "lang"))
+		local key, value, params = http_cookies.parse_setcookie("lang=en-US; Expires=Wed, 09 Jun 2021 10:18:14 GMT")
+		assert(s:store("mysite.com", "/", true, key, value, params))
+		assert.same("en-US", s:get("mysite.com", "/", "lang"))
+		assert.same(nil, s:get("other.com", "/", "lang"))
+		assert.same(nil, s:get("mysite.com", "/other", "lang"))
+		assert.same(nil, s:get("mysite.com", "/", "other"))
+	end)
+	it("implements examples from spec", function()
+		local s = http_cookies.new_store()
+
+		assert(s:store("example.com", "/", true, http_cookies.parse_setcookie("SID=31d4d96e407aad42")))
+		assert.same("SID=31d4d96e407aad42", s:lookup("example.com", "/", true, true))
+		assert.same("SID=31d4d96e407aad42", s:lookup("example.com", "/other", true, true))
+		assert.same("", s:lookup("subdomain.example.com", "/", true, true))
+		assert.same("", s:lookup("other.com", "/", true, true))
+
+		assert(s:store("example.com", "/", true, http_cookies.parse_setcookie("SID=31d4d96e407aad42; Path=/; Domain=example.com")))
+		assert.same("SID=31d4d96e407aad42", s:lookup("example.com", "/", true, true))
+		assert.same("SID=31d4d96e407aad42", s:lookup("example.com", "/other", true, true))
+		assert.same("SID=31d4d96e407aad42", s:lookup("subdomain.example.com", "/", true, true))
+		assert.same("", s:lookup("other.com", "/", true, true))
+
+		assert(s:store("example.com", "/", true, http_cookies.parse_setcookie("SID=31d4d96e407aad42; Path=/; Secure; HttpOnly")))
+		assert(s:store("example.com", "/", true, http_cookies.parse_setcookie("lang=en-US; Path=/; Domain=example.com")))
+		assert.same("SID=31d4d96e407aad42; lang=en-US", s:lookup("example.com", "/other", true, true))
+		assert.same("lang=en-US", s:lookup("subdomain.example.com", "/", true, true))
+		assert.same("lang=en-US", s:lookup("example.com", "/", true, false))
+		assert.same("lang=en-US", s:lookup("example.com", "/", false, true))
+		assert.same("", s:lookup("other.com", "/", true, true))
+
+		s.time = function() return 1234567890 end
+		assert(s:store("example.com", "/", true, http_cookies.parse_setcookie("lang=en-US; Expires=Wed, 09 Jun 2021 10:18:14 GMT")))
+		assert.same("SID=31d4d96e407aad42; lang=en-US", s:lookup("example.com", "/", true, true))
+		s.time = function() return 9234567890 end
+		assert.same("SID=31d4d96e407aad42", s:lookup("example.com", "/", true, true))
+	end)
+end)
