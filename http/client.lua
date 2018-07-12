@@ -25,12 +25,12 @@ local function negotiate(s, options, timeout)
 		local ctx = options.ctx or default_ctx
 		local ssl = openssl_ssl.new(ctx)
 		local ip = options.host and IPaddress:match(options.host)
-		if options.sendname ~= nil then
-			if options.sendname then -- false indicates no sendname wanted
-				ssl:setHostName(options.sendname)
-			end
-		elseif options.host and not ip then
-			ssl:setHostName(options.host)
+		local sendname = options.sendname
+		if sendname == nil and options.host and not ip then
+			sendname = options.host
+		end
+		if sendname then -- false indicates no sendname wanted
+			ssl:setHostName(sendname)
 		end
 		if http_tls.has_alpn then
 			if version == nil then
@@ -46,7 +46,9 @@ local function negotiate(s, options, timeout)
 		end
 		if options.host and http_tls.has_hostname_validation then
 			local params = openssl_verify_param.new()
-			if ip then
+			if sendname then
+				params:setHost(sendname)
+			elseif ip then
 				params:setIP(options.host)
 			else
 				params:setHost(options.host)
