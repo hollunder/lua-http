@@ -127,7 +127,7 @@ local function new_store()
 	}, store_mt)
 end
 
-function store_methods:store(req_domain, req_path, req_is_http, name, value, params)
+function store_methods:store(req_domain, req_path, req_is_http, req_is_secure, name, value, params)
 	assert(type(req_domain) == "string")
 	assert(type(req_path) == "string")
 	assert(type(name) == "string")
@@ -217,6 +217,14 @@ function store_methods:store(req_domain, req_path, req_is_http, name, value, par
 			default_path = req_path:match("^([^?]*)/")
 		end
 		cookie.path = default_path
+	end
+
+	-- If the scheme component of the request-uri does not denote a
+	-- "secure" protocol (as defined by the user agent), and the
+	-- cookie's secure-only-flag is true, then abort these steps and
+	-- ignore the cookie entirely.
+	if not req_is_secure and cookie.secure then
+		return false
 	end
 
 	-- If the cookie was received from a "non-HTTP" API and the
