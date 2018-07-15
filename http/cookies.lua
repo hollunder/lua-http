@@ -4,6 +4,7 @@ RFC 6265
 ]]
 
 local http_patts = require "lpeg_patterns.http"
+local http_util = require "http.util"
 
 local EOF = require "lpeg".P(-1)
 local sane_cookie_date = http_patts.IMF_fixdate * EOF
@@ -67,6 +68,49 @@ local cookie_mt = {
 	__name = "http.cookies.cookie";
 	__index = cookie_methods;
 }
+
+function cookie_methods:bake()
+	local cookie = { self.name .. "=" .. self.value }
+	local n = 1
+	if self.expiry_time < math.huge then
+		local expiry_time = math.max(0, self.expiry_time)
+		n = n + 1
+		-- Prefer Expires over Max-age
+		cookie[n] = "; Expires=" .. http_util.imf_date(expiry_time)
+	end
+	if self.domain then
+		n = n + 1
+		cookie[n] = "; Domain=" .. self.domain
+	end
+	if self.path then
+		n = n + 1
+		cookie[n] = "; Path=" .. http_util.encodeURI(self.path)
+	end
+	if self.secure_only then
+		n = n + 1
+		cookie[n] = "; Secure"
+	end
+	if self.http_only then
+		n = n + 1
+		cookie[n] = "; HttpOnly"
+	end
+	-- https://tools.ietf.org/html/draft-ietf-httpbis-rfc6265bis-02#section-5.2
+	local same_site = self.same_site
+	if same_site then
+		same_site = same_site:lower()
+		local v
+		if same_site == "strict" then
+			v = "; SameSite=Strict"
+		elseif same_site == "lax" then
+			v = "; SameSite=Lax"
+		else
+			error('invalid value for same_site, expected "Strict" or "Lax"')
+		end
+		n = n + 1
+		cookie[n] = v
+	end
+	return table.concat(cookie, "", 1, n)
+end
 
 local store_methods = {
 	time = function() return os.time() end;
