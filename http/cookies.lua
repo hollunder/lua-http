@@ -107,6 +107,7 @@ function store_methods:store(req_domain, req_path, req_is_http, name, value, par
 		path = nil;
 		secure_only = not not params.secure;
 		http_only = not not params.httponly;
+		same_site = params.samesite;
 	}, cookie_mt)
 
 	-- If a cookie has both the Max-Age and the Expires attribute, the Max-
