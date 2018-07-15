@@ -142,13 +142,13 @@ function store_methods:store(req_domain, req_path, req_is_http, req_is_secure, n
 	local cookie = setmetatable({
 		name = name;
 		value = value;
+		expiry_time = math.huge;
+		domain = req_domain;
+		path = nil;
 		creation_time = now;
 		last_access_time = now;
 		persistent = false;
-		expiry_time = math.huge;
 		host_only = true;
-		domain = req_domain;
-		path = nil;
 		secure_only = not not params.secure;
 		http_only = not not params.httponly;
 		same_site = params.samesite;
@@ -189,7 +189,6 @@ function store_methods:store(req_domain, req_path, req_is_http, req_is_secure, n
 			cookie.domain = domain
 		end
 	end
-
 
 	-- If the attribute-value is empty or if the first character of the
 	-- attribute-value is not %x2F ("/")
