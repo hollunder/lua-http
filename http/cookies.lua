@@ -357,6 +357,52 @@ function store_methods:get(domain, path, name)
 	return nil
 end
 
+function store_methods:remove(domain, path, name)
+	assert(type(domain) == "string")
+	assert(type(path) == "string" or (path == nil and name == nil))
+	assert(type(name) == "string" or name == nil)
+	local domain_cookies = self.domains[domain]
+	if not domain_cookies then
+		return
+	end
+	if path == nil then
+		-- Delete whole domain
+		for _, path_cookies in pairs(domain_cookies) do
+			for _, cookie in pairs(path_cookies) do
+				self.expiry_heap:remove(cookie)
+			end
+		end
+		self.domains[domain] = nil
+	else
+		local path_cookies = domain_cookies[path]
+		if path_cookies then
+			if name == nil then
+				-- Delete all names at path
+				for _, cookie in pairs(path_cookies) do
+					self.expiry_heap:remove(cookie)
+				end
+				domain_cookies[path] = nil
+				if next(domain_cookies) == nil then
+					self.domains[domain] = nil
+				end
+			else
+				-- Delete singular cookie
+				local cookie = path_cookies[name]
+				if cookie then
+					self.expiry_heap:remove(cookie)
+					path_cookies[name] = nil
+					if next(path_cookies) == nil then
+						domain_cookies[path] = nil
+						if next(domain_cookies) == nil then
+							self.domains[domain] = nil
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
 --[[ The user agent SHOULD sort the cookie-list in the following order:
   - Cookies with longer paths are listed before cookies with shorter paths.
   - Among cookies that have equal-length path fields, cookies with earlier
