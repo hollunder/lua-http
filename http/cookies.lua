@@ -175,8 +175,9 @@ function store_methods:store(req_domain, req_path, req_is_http, req_is_secure, n
 	end
 
 	local domain = params.domain or "";
+
+	-- If the domain-attribute is non-empty:
 	if #domain > 0 then
-		domain = canonicalise_host(domain)
 		-- If the canonicalized request-host does not domain-match the
 		-- domain-attribute:
 		if not domain_match(domain, req_domain) then
