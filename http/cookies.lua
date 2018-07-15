@@ -20,10 +20,7 @@ local function parse_setcookie(setcookie_header)
 	return Set_Cookie:match(setcookie_header)
 end
 
-local function canonicalise_host(domain)
-	-- TODO!
-	return domain
-end
+local canonicalise_host = psl.str_to_utf8lower
 
 --[[
 A string domain-matches a given domain string if at least one of the following
@@ -144,7 +141,7 @@ function store_methods:store(req_domain, req_path, req_is_http, req_is_secure, n
 
 	local now = self.time()
 
-	req_domain = canonicalise_host(req_domain)
+	req_domain = assert(canonicalise_host(req_domain), "invalid request domain")
 
 	-- RFC 6265 Section 5.3
 	local cookie = setmetatable({
