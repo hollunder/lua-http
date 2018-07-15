@@ -5,6 +5,7 @@ RFC 6265
 
 local http_patts = require "lpeg_patterns.http"
 local http_util = require "http.util"
+local psl = require "psl"
 
 local EOF = require "lpeg".P(-1)
 local sane_cookie_date = http_patts.IMF_fixdate * EOF
@@ -112,7 +113,14 @@ function cookie_methods:bake()
 	return table.concat(cookie, "", 1, n)
 end
 
+local default_psl
+if psl.latest then
+	default_psl = psl.latest()
+else
+	default_psl = psl.builtin()
+end
 local store_methods = {
+	psl = default_psl;
 	time = function() return os.time() end;
 }
 
@@ -175,6 +183,19 @@ function store_methods:store(req_domain, req_path, req_is_http, req_is_secure, n
 	end
 
 	local domain = params.domain or "";
+
+	-- If the user agent is configured to reject "public suffixes" and
+	-- the domain-attribute is a public suffix:
+	if domain ~= "" and self.psl and not self.psl:is_cookie_domain_acceptable(req_domain, domain) then
+		-- If the domain-attribute is identical to the canonicalized request-host:
+		if domain == req_domain then
+			-- Let the domain-attribute be the empty string.
+			domain = ""
+		else
+			-- Ignore the cookie entirely and abort these steps.
+			return false
+		end
+	end
 
 	-- If the domain-attribute is non-empty:
 	if #domain > 0 then
