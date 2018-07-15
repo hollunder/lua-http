@@ -167,7 +167,7 @@ function store_methods:store(req_domain, req_path, req_is_http, name, value, par
 			cookie.expiry_time = now + max_age
 		end
 	elseif params.expires then
-		local date = sane_cookie_date:match(params["expires"])
+		local date = sane_cookie_date:match(params.expires)
 		if date then
 			cookie.persistent = true
 			cookie.expiry_time = os.time(date)
